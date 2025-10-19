@@ -19,3 +19,7 @@ Route::get('/category', [CategoryController::class, 'index']);
 Route::post('/category', [CategoryController::class, 'store']);
 Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
 
+Route::get('/record/{id}', [RecordController::class, 'show']);
+Route::post('/record', [RecordController::class, 'store']);
+Route::delete('/record/{id}', [RecordController::class, 'destroy']);
+Route::get('/record', [RecordController::class, 'index']);
