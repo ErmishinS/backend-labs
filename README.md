@@ -1,5 +1,11 @@
 # Back-end Labs (Laravel project)
 
+## Variant
+```bash
+    32 mod 3 = 2
+    variant = 2
+```
+
 ## About project
 This project is a simple Laravel application with a `/healthcheck` endpoint that returns a JSON response. 
 
