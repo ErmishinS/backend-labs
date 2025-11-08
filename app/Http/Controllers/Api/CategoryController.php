@@ -3,46 +3,47 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Services\JsonStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    protected JsonStorageService $storage;
-    protected string $collection = 'categories';
-
-    public function __construct()
+    public function index(Request $request)
     {
-        $this->storage = new JsonStorageService();
-    }
+        $userId = $request->query('user_id');
 
-    public function index(): JsonResponse
-    {
-        $categories = $this->storage->all($this->collection);
+        if ($userId) {
+            $categories = Category::whereNull('user_id')
+                ->orWhere('user_id', $userId)
+                ->get();
+        } else {
+            $categories = Category::whereNull('user_id')->get();
+        }
+
         return response()->json($categories);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        $title = $request->input('title');
-        if (!$title) {
-            return response()->json(['error' => 'Title is required'], 400);
-        }
-
-        $category = $this->storage->create($this->collection, [
-            'title' => $title,
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'user_id' => 'nullable|exists:users,id'
         ]);
+
+        $category = Category::create($validated);
 
         return response()->json($category, 201);
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy($id)
     {
-        $deleted = $this->storage->delete($this->collection, $id);
-        if (!$deleted) {
+        $category = Category::find($id);
+        if (!$category) {
             return response()->json(['error' => 'Category not found'], 404);
         }
-        return response()->json(['success' => true]);
+        $category->delete();
+        return response()->json(['message' => 'Category deleted']);
     }
 }
