@@ -3,55 +3,89 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\JsonStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
-    protected JsonStorageService $storage;
-    protected string $collection = 'users';
-
-    public function __construct()
-    {
-        $this->storage = new JsonStorageService();
-    }
-
+    /**
+     * Get all users
+     */
     public function index(): JsonResponse
     {
-        $users = $this->storage->all($this->collection);
+        $users = User::all();
+
         return response()->json($users);
     }
 
-    public function show($id): JsonResponse
+    /**
+     * Get a single user by ID
+     */
+    public function show(int $id): JsonResponse
     {
-        $user = $this->storage->find($this->collection, $id);
+        $user = User::find($id);
+
         if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+            return response()->json([
+                'error' => 'User not found'
+            ], 404);
         }
+
         return response()->json($user);
     }
 
+    /**
+     * Create a new user
+     */
     public function store(Request $request): JsonResponse
     {
-        $name = $request->input('name');
-        if (!$name) {
-            return response()->json(['error' => 'Name is required'], 400);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255'
+            ]);
+
+            $user = User::create($validated);
+
+            return response()->json($user, 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to create user',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $user = $this->storage->create($this->collection, [
-            'name' => $name,
-        ]);
-
-        return response()->json($user, 201);
     }
 
-    public function destroy($id): JsonResponse
+    /**
+     * Delete a user by ID
+     */
+    public function destroy(int $id): JsonResponse
     {
-        $deleted = $this->storage->delete($this->collection, $id);
-        if (!$deleted) {
-            return response()->json(['error' => 'User not found'], 404);
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'User not found'
+            ], 404);
         }
-        return response()->json(['success' => true]);
+
+        try {
+            $user->delete();
+
+            return response()->json([
+                'message' => 'User deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete user',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
